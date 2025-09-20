@@ -12,86 +12,90 @@ const PORT = process.env.PORT || 3000;
 
 // Configuration from environment variables
 const dodoApiKey = process.env.DODO_PAYMENTS_API_KEY;
-// const dodoWebhookSecret = process.env.DODO_WEBHOOK_SECRET;
+const dodoWebhookSecret = process.env.DODO_WEBHOOK_SECRET;
 const dodoEnvironment = process.env.DODO_PAYMENTS_ENVIRONMENT || "test_mode";
 const productId = process.env.PRODUCT_ID;
 
 console.log("Server starting with configuration:");
 console.log("API Key present:", !!dodoApiKey);
-// console.log("Webhook Secret present:", !!dodoWebhookSecret);
+console.log("Webhook Secret present:", !!dodoWebhookSecret);
 console.log("Environment:", dodoEnvironment);
 console.log("Product ID:", productId);
 
 // Webhook endpoint (must be before express.json() middleware)
-// app.post("/api/webhook", express.raw({ type: "application/json" }), async (req, res) => {
-//   try {
-//     if (!dodoWebhookSecret) {
-//       console.error("Webhook secret not configured");
-//       return res.status(500).json({ error: "Webhook not configured" });
-//     }
+app.post(
+  "/api/webhook",
+  express.raw({ type: "application/json" }),
+  async (req, res) => {
+    try {
+      if (!dodoWebhookSecret) {
+        console.error("Webhook secret not configured");
+        return res.status(500).json({ error: "Webhook not configured" });
+      }
 
-//     const signature = req.headers["dodo-signature"] || req.headers["x-dodo-signature"];
-//     const payload = req.body;
+      const signature =
+        req.headers["dodo-signature"] || req.headers["x-dodo-signature"];
+      const payload = req.body;
 
-//     console.log("Webhook received:", {
-//       signature: signature ? "present" : "missing",
-//       payloadSize: payload.length
-//     });
+      console.log("Webhook received:", {
+        signature: signature ? "present" : "missing",
+        payloadSize: payload.length,
+      });
 
-//     // Verify webhook signature
-//     if (signature && dodoWebhookSecret) {
-//       const expectedSignature = crypto
-//         .createHmac("sha256", dodoWebhookSecret)
-//         .update(payload)
-//         .digest("hex");
-      
-//       const providedSignature = (signature as string).replace("sha256=", "");
-      
-//       if (expectedSignature !== providedSignature) {
-//         console.error("Webhook signature verification failed");
-//         return res.status(401).json({ error: "Invalid signature" });
-//       }
-//     }
+      // Verify webhook signature
+      if (signature && dodoWebhookSecret) {
+        const expectedSignature = crypto
+          .createHmac("sha256", dodoWebhookSecret)
+          .update(payload)
+          .digest("hex");
 
-//     // Parse the payload
-//     let event;
-//     try {
-//       event = JSON.parse(payload.toString());
-//     } catch (parseError) {
-//       console.error("Failed to parse webhook payload:", parseError);
-//       return res.status(400).json({ error: "Invalid JSON payload" });
-//     }
+        const providedSignature = (signature as string).replace("sha256=", "");
 
-//     console.log("Webhook event:", event.type, "for payment:", event.data?.id);
+        if (expectedSignature !== providedSignature) {
+          console.error("Webhook signature verification failed");
+          return res.status(401).json({ error: "Invalid signature" });
+        }
+      }
 
-//     // Handle different webhook events
-//     switch (event.type) {
-//       case "payment.succeeded":
-//       case "payment.completed":
-//         console.log("Payment successful:", event.data?.id);
-//         // Add your business logic here (e.g., fulfill order, send confirmation email)
-//         break;
-//       case "payment.failed":
-//         console.log("Payment failed:", event.data?.id);
-//         // Add your business logic here (e.g., notify customer, retry logic)
-//         break;
-//       case "subscription.created":
-//         console.log("Subscription created:", event.data?.id);
-//         break;
-//       case "subscription.cancelled":
-//         console.log("Subscription cancelled:", event.data?.id);
-//         break;
-//       default:
-//         console.log("Unhandled webhook event type:", event.type);
-//     }
+      // Parse the payload
+      let event;
+      try {
+        event = JSON.parse(payload.toString());
+      } catch (parseError) {
+        console.error("Failed to parse webhook payload:", parseError);
+        return res.status(400).json({ error: "Invalid JSON payload" });
+      }
 
-//     res.status(200).json({ received: true });
+      console.log("Webhook event:", event.type, "for payment:", event.data?.id);
 
-//   } catch (error) {
-//     console.error("Webhook processing error:", error);
-//     res.status(500).json({ error: "Webhook processing failed" });
-//   }
-// });
+      // Handle different webhook events
+      switch (event.type) {
+        case "payment.succeeded":
+        case "payment.completed":
+          console.log("Payment successful:", event.data?.id);
+          // Add your business logic here (e.g., fulfill order, send confirmation email)
+          break;
+        case "payment.failed":
+          console.log("Payment failed:", event.data?.id);
+          // Add your business logic here (e.g., notify customer, retry logic)
+          break;
+        case "subscription.created":
+          console.log("Subscription created:", event.data?.id);
+          break;
+        case "subscription.cancelled":
+          console.log("Subscription cancelled:", event.data?.id);
+          break;
+        default:
+          console.log("Unhandled webhook event type:", event.type);
+      }
+
+      res.status(200).json({ received: true });
+    } catch (error) {
+      console.error("Webhook processing error:", error);
+      res.status(500).json({ error: "Webhook processing failed" });
+    }
+  }
+);
 
 // Regular middleware (after webhook endpoint)
 app.use(express.json());
@@ -169,13 +173,18 @@ app.post("/api/create-payment", async (req, res) => {
       metadata: {
         source: "web_checkout",
         timestamp: new Date().toISOString(),
-      }
+      },
     };
 
-    console.log("Sending checkout session data:", JSON.stringify(checkoutData, null, 2));
+    console.log(
+      "Sending checkout session data:",
+      JSON.stringify(checkoutData, null, 2)
+    );
 
     // Create checkout session
-    const checkoutSession = await dodoClient.checkoutSessions.create(checkoutData);
+    const checkoutSession = await dodoClient.checkoutSessions.create(
+      checkoutData
+    );
 
     console.log("Checkout session response received:");
     console.log("Session ID:", checkoutSession.session_id);
@@ -239,7 +248,11 @@ app.get("/success", (req, res) => {
         <div class="container">
             <h1 class="success">Payment Successful!</h1>
             <p>Thank you for your payment.</p>
-            ${payment_id ? `<p><strong>Payment ID:</strong> ${payment_id}</p>` : ""}
+            ${
+              payment_id
+                ? `<p><strong>Payment ID:</strong> ${payment_id}</p>`
+                : ""
+            }
             ${status ? `<p><strong>Status:</strong> ${status}</p>` : ""}
             <a href="/" class="back-link">Back to Home</a>
         </div>
