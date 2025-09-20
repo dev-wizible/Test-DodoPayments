@@ -1,201 +1,214 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Pay Now - Dodo Payments</title>
     <style>
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            margin: 0;
-            padding: 0;
-            min-height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
+      body {
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        margin: 0;
+        padding: 0;
+        min-height: 100vh;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+      }
 
-        .container {
-            background: white;
-            padding: 60px 40px;
-            border-radius: 16px;
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
-            text-align: center;
-            max-width: 400px;
-            width: 90%;
-        }
+      .container {
+        background: white;
+        padding: 60px 40px;
+        border-radius: 16px;
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+        text-align: center;
+        max-width: 400px;
+        width: 90%;
+      }
 
-        h1 {
-            color: #333;
-            margin-bottom: 20px;
-            font-size: 2.2rem;
-            font-weight: 700;
-        }
+      h1 {
+        color: #333;
+        margin-bottom: 20px;
+        font-size: 2.2rem;
+        font-weight: 700;
+      }
 
-        p {
-            color: #666;
-            margin-bottom: 40px;
-            font-size: 1.1rem;
-            line-height: 1.5;
-        }
+      p {
+        color: #666;
+        margin-bottom: 40px;
+        font-size: 1.1rem;
+        line-height: 1.5;
+      }
 
-        .payment-button {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            border: none;
-            padding: 18px 40px;
-            font-size: 18px;
-            font-weight: 600;
-            border-radius: 12px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            width: 100%;
-            position: relative;
-            overflow: hidden;
-        }
+      .payment-button {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border: none;
+        padding: 18px 40px;
+        font-size: 18px;
+        font-weight: 600;
+        border-radius: 12px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        width: 100%;
+        position: relative;
+        overflow: hidden;
+      }
 
-        .payment-button:hover:not(:disabled) {
-            transform: translateY(-3px);
-            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.4);
-        }
+      .payment-button:hover:not(:disabled) {
+        transform: translateY(-3px);
+        box-shadow: 0 10px 25px rgba(102, 126, 234, 0.4);
+      }
 
-        .payment-button:active:not(:disabled) {
-            transform: translateY(-1px);
-        }
+      .payment-button:active:not(:disabled) {
+        transform: translateY(-1px);
+      }
 
-        .payment-button:disabled {
-            background: #ccc;
-            cursor: not-allowed;
-            transform: none;
-            box-shadow: none;
-        }
+      .payment-button:disabled {
+        background: #ccc;
+        cursor: not-allowed;
+        transform: none;
+        box-shadow: none;
+      }
 
-        .loading {
-            display: none;
-        }
+      .loading {
+        display: none;
+      }
 
-        .spinner {
-            border: 2px solid transparent;
-            border-top: 2px solid white;
-            border-radius: 50%;
-            width: 18px;
-            height: 18px;
-            animation: spin 1s linear infinite;
-            display: inline-block;
-            margin-left: 10px;
-        }
+      .spinner {
+        border: 2px solid transparent;
+        border-top: 2px solid white;
+        border-radius: 50%;
+        width: 18px;
+        height: 18px;
+        animation: spin 1s linear infinite;
+        display: inline-block;
+        margin-left: 10px;
+      }
 
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+      @keyframes spin {
+        0% {
+          transform: rotate(0deg);
         }
+        100% {
+          transform: rotate(360deg);
+        }
+      }
 
-        .error {
-            color: #e74c3c;
-            margin-top: 20px;
-            padding: 15px;
-            background: #fdf2f2;
-            border: 1px solid #fecaca;
-            border-radius: 8px;
-            display: none;
-            font-weight: 500;
-        }
+      .error {
+        color: #e74c3c;
+        margin-top: 20px;
+        padding: 15px;
+        background: #fdf2f2;
+        border: 1px solid #fecaca;
+        border-radius: 8px;
+        display: none;
+        font-weight: 500;
+      }
 
-        .secure-badge {
-            margin-top: 30px;
-            color: #888;
-            font-size: 0.9rem;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-        }
+      .secure-badge {
+        margin-top: 30px;
+        color: #888;
+        font-size: 0.9rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+      }
 
-        .lock-icon {
-            width: 16px;
-            height: 16px;
-            fill: #888;
-        }
+      .lock-icon {
+        width: 16px;
+        height: 16px;
+        fill: #888;
+      }
     </style>
-</head>
-<body>
+  </head>
+  <body>
     <div class="container">
-        <h1>Secure Checkout</h1>
-        <p>Click the button below to proceed with your payment securely through Dodo Payments.</p>
-        
-        <button id="paymentButton" class="payment-button">
-            Pay Now
-            <span class="loading" id="loading">
-                <span class="spinner"></span>
-            </span>
-        </button>
+      <h1>Secure Checkout</h1>
+      <p>
+        Click the button below to proceed with your payment securely through
+        Dodo Payments.
+      </p>
 
-        <div class="error" id="errorMessage"></div>
+      <button id="paymentButton" class="payment-button">
+        Pay Now
+        <span class="loading" id="loading">
+          <span class="spinner"></span>
+        </span>
+      </button>
 
-        <div class="secure-badge">
-            <svg class="lock-icon" viewBox="0 0 24 24">
-                <path d="M12,17A2,2 0 0,0 14,15C14,13.89 13.1,13 12,13A2,2 0 0,0 10,15A2,2 0 0,0 12,17M18,8A2,2 0 0,1 20,10V20A2,2 0 0,1 18,22H6A2,2 0 0,1 4,20V10C4,8.89 4.9,8 6,8H7V6A5,5 0 0,1 12,1A5,5 0 0,1 17,6V8H18M12,3A3,3 0 0,0 9,6V8H15V6A3,3 0 0,0 12,3Z"/>
-            </svg>
-            Secured by Dodo Payments
-        </div>
+      <div class="error" id="errorMessage"></div>
+
+      <div class="secure-badge">
+        <svg class="lock-icon" viewBox="0 0 24 24">
+          <path
+            d="M12,17A2,2 0 0,0 14,15C14,13.89 13.1,13 12,13A2,2 0 0,0 10,15A2,2 0 0,0 12,17M18,8A2,2 0 0,1 20,10V20A2,2 0 0,1 18,22H6A2,2 0 0,1 4,20V10C4,8.89 4.9,8 6,8H7V6A5,5 0 0,1 12,1A5,5 0 0,1 17,6V8H18M12,3A3,3 0 0,0 9,6V8H15V6A3,3 0 0,0 12,3Z"
+          />
+        </svg>
+        Secured by Dodo Payments
+      </div>
     </div>
 
     <script>
-        document.getElementById('paymentButton').addEventListener('click', async function() {
-            const button = this;
-            const loading = document.getElementById('loading');
-            const errorDiv = document.getElementById('errorMessage');
-            
-            // Show loading state
-            button.disabled = true;
-            errorDiv.style.display = 'none';
-            button.innerHTML = 'Processing... <span class="spinner"></span>';
+      document
+        .getElementById("paymentButton")
+        .addEventListener("click", async function () {
+          const button = this;
+          const loading = document.getElementById("loading");
+          const errorDiv = document.getElementById("errorMessage");
 
-            try {
-                const response = await fetch('/api/create-checkout-session', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    }
-                });
+          // Show loading state
+          button.disabled = true;
+          errorDiv.style.display = "none";
+          button.innerHTML = 'Processing... <span class="spinner"></span>';
 
-                // Check if response is ok first
-                if (!response.ok) {
-                    const errorText = await response.text();
-                    console.error('Server error:', response.status, errorText);
-                    throw new Error(`Server error: ${response.status} - ${errorText}`);
-                }
+          try {
+            const response = await fetch("/api/create-payment", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+            });
 
-                // Check content type before parsing JSON
-                const contentType = response.headers.get('content-type');
-                if (!contentType || !contentType.includes('application/json')) {
-                    const responseText = await response.text();
-                    console.error('Non-JSON response:', responseText);
-                    throw new Error('Server returned non-JSON response');
-                }
-
-                const result = await response.json();
-
-                if (!result.checkout_url) {
-                    throw new Error('No checkout URL received from server');
-                }
-
-                // Redirect to Dodo Payments checkout
-                window.location.href = result.checkout_url;
-
-            } catch (error) {
-                console.error('Payment error:', error);
-                
-                // Show error message
-                errorDiv.textContent = error.message || 'An unexpected error occurred';
-                errorDiv.style.display = 'block';
-                
-                // Reset button state
-                button.disabled = false;
-                button.innerHTML = 'Pay Now';
+            // Check if response is ok first
+            if (!response.ok) {
+              const errorText = await response.text();
+              console.error("Server error:", response.status, errorText);
+              throw new Error(
+                `Server error: ${response.status} - ${errorText}`
+              );
             }
+
+            // Check content type before parsing JSON
+            const contentType = response.headers.get("content-type");
+            if (!contentType || !contentType.includes("application/json")) {
+              const responseText = await response.text();
+              console.error("Non-JSON response:", responseText);
+              throw new Error("Server returned non-JSON response");
+            }
+
+            const result = await response.json();
+
+            if (!result.paymentLink) {
+              throw new Error("No payment link received from server");
+            }
+
+            // Redirect to Dodo Payments checkout
+            window.location.href = result.paymentLink;
+          } catch (error) {
+            console.error("Payment error:", error);
+
+            // Show error message
+            errorDiv.textContent =
+              error.message || "An unexpected error occurred";
+            errorDiv.style.display = "block";
+
+            // Reset button state
+            button.disabled = false;
+            button.innerHTML = "Pay Now";
+          }
         });
     </script>
-</body>
+  </body>
 </html>

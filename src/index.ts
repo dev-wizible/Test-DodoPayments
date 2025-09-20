@@ -1,15 +1,29 @@
-// index.ts (Backend)
-import express from 'express';
-import path from 'path';
-import DodoPayments from 'dodopayments';
-import 'dotenv/config';
+import express from "express";
+import path from "path";
+import DodoPayments from "dodopayments";
+import dotenv from "dotenv";
+import crypto from "crypto";
+
+// Load environment variables
+dotenv.config();
+
 const app = express();
 const PORT = process.env.PORT || 3000;
+
+// Configuration from environment variables
+const dodoApiKey = process.env.DODO_PAYMENTS_API_KEY;
+const dodoEnvironment = process.env.DODO_PAYMENTS_ENVIRONMENT || "test_mode";
+const productId = process.env.PRODUCT_ID;
+
+console.log("Server starting with configuration:");
+console.log("API Key present:", !!dodoApiKey);
+console.log("Environment:", dodoEnvironment);
+console.log("Product ID:", productId);
 
 // Middleware
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use(express.static('public'));
+app.use(express.static("public"));
 
 // Add request logging
 app.use((req, res, next) => {
@@ -18,90 +32,104 @@ app.use((req, res, next) => {
 });
 
 // Initialize Dodo Payments client
-const dodoClient = new DodoPayments({
-  bearerToken: process.env.DODO_PAYMENTS_API_KEY || 'your-api-key-here',
-});
+let dodoClient: DodoPayments | null = null;
 
-// Configuration from environment variables
-const PRODUCT_ID = process.env.PRODUCT_ID || 'your-product-id';
-const PRODUCT_QUANTITY = parseInt(process.env.PRODUCT_QUANTITY || '1');
-const CUSTOMER_NAME = process.env.CUSTOMER_NAME || '';
-const CUSTOMER_EMAIL = process.env.CUSTOMER_EMAIL || '';
-
-console.log('Server starting with configuration:');
-console.log('Product ID:', PRODUCT_ID);
-console.log('API Key configured:', process.env.DODO_PAYMENTS_API_KEY ? 'Yes' : 'No');
+try {
+  if (dodoApiKey) {
+    dodoClient = new DodoPayments({
+      bearerToken: dodoApiKey,
+      environment: dodoEnvironment as "test_mode" | "live_mode",
+    });
+    console.log("Dodo Payments client initialized successfully");
+  } else {
+    console.error("Dodo Payments API key not provided");
+  }
+} catch (error) {
+  console.error("Failed to initialize Dodo Payments client:", error);
+}
 
 // Serve the HTML file
-app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+app.get("/", (req, res) => {
+  res.sendFile(path.join(__dirname, "public", "index.html"));
 });
 
 // API endpoint to create checkout session
-app.post('/api/create-checkout-session', async (req, res) => {
+app.post("/api/create-payment", async (req, res) => {
   try {
-    console.log('Creating checkout session with config:');
-    console.log('Product ID:', PRODUCT_ID);
-    console.log('Quantity:', PRODUCT_QUANTITY);
-    console.log('Customer Name:', CUSTOMER_NAME);
-    console.log('Customer Email:', CUSTOMER_EMAIL);
+    console.log("Checkout session creation request received");
 
-    // Validate required configuration
-    if (!PRODUCT_ID || PRODUCT_ID === 'your-product-id') {
-      return res.status(400).json({ 
-        error: 'Product ID not configured. Please set PRODUCT_ID in your .env file' 
+    if (!dodoClient) {
+      console.error("Dodo Payments client not initialized");
+      return res.status(500).json({
+        success: false,
+        error: "Payment system not available",
       });
     }
 
-    if (!process.env.DODO_PAYMENTS_API_KEY || process.env.DODO_PAYMENTS_API_KEY === 'your-api-key-here') {
-      return res.status(400).json({ 
-        error: 'API key not configured. Please set DODO_PAYMENTS_API_KEY in your .env file' 
+    if (!dodoApiKey) {
+      console.error("Dodo Payments API key not configured");
+      return res.status(500).json({
+        success: false,
+        error: "Payment system not configured",
       });
     }
 
-    // Create checkout session with predefined configuration
-    const checkoutSession = await dodoClient.checkoutSessions.create({
+    if (!productId) {
+      console.error("Product ID not configured");
+      return res.status(500).json({
+        success: false,
+        error: "Product not configured",
+      });
+    }
+
+    console.log("Creating checkout session for product:", productId);
+
+    // Prepare checkout session data
+    const checkoutData = {
       product_cart: [
         {
-          product_id: PRODUCT_ID,
-          quantity: PRODUCT_QUANTITY
-        }
+          product_id: productId,
+          quantity: 1,
+        },
       ],
-      // Customer data is optional - if not provided, checkout will collect it
-      customer: CUSTOMER_EMAIL && CUSTOMER_NAME ? {
-        email: CUSTOMER_EMAIL,
-        name: CUSTOMER_NAME
-      } : undefined,
-      return_url: `${req.protocol}://${req.get('host')}/success`,
+      return_url: `${req.protocol}://${req.get("host")}/success`,
       metadata: {
-        source: 'web_checkout',
+        source: "web_checkout",
         timestamp: new Date().toISOString(),
-        product_id: PRODUCT_ID,
-        quantity: PRODUCT_QUANTITY.toString()
-      }
-    });
+      },
+    };
 
-    console.log('Checkout session created successfully:', checkoutSession.session_id);
+    console.log(
+      "Sending checkout session data:",
+      JSON.stringify(checkoutData, null, 2)
+    );
+
+    // Create checkout session
+    const checkoutSession = await dodoClient.checkoutSessions.create(
+      checkoutData
+    );
+
+    console.log("Checkout session response received:");
+    console.log("Session ID:", checkoutSession.session_id);
+    console.log("Checkout URL:", checkoutSession.checkout_url);
 
     res.json({
-      session_id: checkoutSession.session_id,
-      checkout_url: checkoutSession.checkout_url
+      success: true,
+      sessionId: checkoutSession.session_id,
+      paymentLink: checkoutSession.checkout_url,
     });
-
   } catch (error) {
-    console.error('Error creating checkout session:', error);
-    
-    // Ensure we always return JSON
+    console.error("Checkout session creation error:", error);
     res.status(500).json({
-      error: 'Failed to create checkout session',
-      details: error instanceof Error ? error.message : 'Unknown error',
-      timestamp: new Date().toISOString()
+      success: false,
+      error: "Failed to create checkout session",
+      details: error instanceof Error ? error.message : "Unknown error",
     });
   }
 });
 
 // Success page endpoint
-app.get('/success', (req, res) => {
+app.get("/success", (req, res) => {
   const { payment_id, status } = req.query;
   res.send(`
     <!DOCTYPE html>
@@ -141,11 +169,15 @@ app.get('/success', (req, res) => {
     </head>
     <body>
         <div class="container">
-            <h1 class="success">✅ Payment Successful!</h1>
+            <h1 class="success">Payment Successful!</h1>
             <p>Thank you for your payment.</p>
-            ${payment_id ? `<p><strong>Payment ID:</strong> ${payment_id}</p>` : ''}
-            ${status ? `<p><strong>Status:</strong> ${status}</p>` : ''}
-            <a href="/" class="back-link">← Back to Home</a>
+            ${
+              payment_id
+                ? `<p><strong>Payment ID:</strong> ${payment_id}</p>`
+                : ""
+            }
+            ${status ? `<p><strong>Status:</strong> ${status}</p>` : ""}
+            <a href="/" class="back-link">Back to Home</a>
         </div>
     </body>
     </html>
@@ -155,8 +187,7 @@ app.get('/success', (req, res) => {
 // Start server
 app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);
-  console.log(`Product ID: ${PRODUCT_ID}`);
-  console.log(`Quantity: ${PRODUCT_QUANTITY}`);
+  console.log(`Product ID: ${productId}`);
 });
 
 export default app;
