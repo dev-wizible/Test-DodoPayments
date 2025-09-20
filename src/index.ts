@@ -12,86 +12,86 @@ const PORT = process.env.PORT || 3000;
 
 // Configuration from environment variables
 const dodoApiKey = process.env.DODO_PAYMENTS_API_KEY;
-const dodoWebhookSecret = process.env.DODO_WEBHOOK_SECRET;
+// const dodoWebhookSecret = process.env.DODO_WEBHOOK_SECRET;
 const dodoEnvironment = process.env.DODO_PAYMENTS_ENVIRONMENT || "test_mode";
 const productId = process.env.PRODUCT_ID;
 
 console.log("Server starting with configuration:");
 console.log("API Key present:", !!dodoApiKey);
-console.log("Webhook Secret present:", !!dodoWebhookSecret);
+// console.log("Webhook Secret present:", !!dodoWebhookSecret);
 console.log("Environment:", dodoEnvironment);
 console.log("Product ID:", productId);
 
 // Webhook endpoint (must be before express.json() middleware)
-app.post("/api/webhook", express.raw({ type: "application/json" }), async (req, res) => {
-  try {
-    if (!dodoWebhookSecret) {
-      console.error("Webhook secret not configured");
-      return res.status(500).json({ error: "Webhook not configured" });
-    }
+// app.post("/api/webhook", express.raw({ type: "application/json" }), async (req, res) => {
+//   try {
+//     if (!dodoWebhookSecret) {
+//       console.error("Webhook secret not configured");
+//       return res.status(500).json({ error: "Webhook not configured" });
+//     }
 
-    const signature = req.headers["dodo-signature"] || req.headers["x-dodo-signature"];
-    const payload = req.body;
+//     const signature = req.headers["dodo-signature"] || req.headers["x-dodo-signature"];
+//     const payload = req.body;
 
-    console.log("Webhook received:", {
-      signature: signature ? "present" : "missing",
-      payloadSize: payload.length
-    });
+//     console.log("Webhook received:", {
+//       signature: signature ? "present" : "missing",
+//       payloadSize: payload.length
+//     });
 
-    // Verify webhook signature
-    if (signature && dodoWebhookSecret) {
-      const expectedSignature = crypto
-        .createHmac("sha256", dodoWebhookSecret)
-        .update(payload)
-        .digest("hex");
+//     // Verify webhook signature
+//     if (signature && dodoWebhookSecret) {
+//       const expectedSignature = crypto
+//         .createHmac("sha256", dodoWebhookSecret)
+//         .update(payload)
+//         .digest("hex");
       
-      const providedSignature = (signature as string).replace("sha256=", "");
+//       const providedSignature = (signature as string).replace("sha256=", "");
       
-      if (expectedSignature !== providedSignature) {
-        console.error("Webhook signature verification failed");
-        return res.status(401).json({ error: "Invalid signature" });
-      }
-    }
+//       if (expectedSignature !== providedSignature) {
+//         console.error("Webhook signature verification failed");
+//         return res.status(401).json({ error: "Invalid signature" });
+//       }
+//     }
 
-    // Parse the payload
-    let event;
-    try {
-      event = JSON.parse(payload.toString());
-    } catch (parseError) {
-      console.error("Failed to parse webhook payload:", parseError);
-      return res.status(400).json({ error: "Invalid JSON payload" });
-    }
+//     // Parse the payload
+//     let event;
+//     try {
+//       event = JSON.parse(payload.toString());
+//     } catch (parseError) {
+//       console.error("Failed to parse webhook payload:", parseError);
+//       return res.status(400).json({ error: "Invalid JSON payload" });
+//     }
 
-    console.log("Webhook event:", event.type, "for payment:", event.data?.id);
+//     console.log("Webhook event:", event.type, "for payment:", event.data?.id);
 
-    // Handle different webhook events
-    switch (event.type) {
-      case "payment.succeeded":
-      case "payment.completed":
-        console.log("Payment successful:", event.data?.id);
-        // Add your business logic here (e.g., fulfill order, send confirmation email)
-        break;
-      case "payment.failed":
-        console.log("Payment failed:", event.data?.id);
-        // Add your business logic here (e.g., notify customer, retry logic)
-        break;
-      case "subscription.created":
-        console.log("Subscription created:", event.data?.id);
-        break;
-      case "subscription.cancelled":
-        console.log("Subscription cancelled:", event.data?.id);
-        break;
-      default:
-        console.log("Unhandled webhook event type:", event.type);
-    }
+//     // Handle different webhook events
+//     switch (event.type) {
+//       case "payment.succeeded":
+//       case "payment.completed":
+//         console.log("Payment successful:", event.data?.id);
+//         // Add your business logic here (e.g., fulfill order, send confirmation email)
+//         break;
+//       case "payment.failed":
+//         console.log("Payment failed:", event.data?.id);
+//         // Add your business logic here (e.g., notify customer, retry logic)
+//         break;
+//       case "subscription.created":
+//         console.log("Subscription created:", event.data?.id);
+//         break;
+//       case "subscription.cancelled":
+//         console.log("Subscription cancelled:", event.data?.id);
+//         break;
+//       default:
+//         console.log("Unhandled webhook event type:", event.type);
+//     }
 
-    res.status(200).json({ received: true });
+//     res.status(200).json({ received: true });
 
-  } catch (error) {
-    console.error("Webhook processing error:", error);
-    res.status(500).json({ error: "Webhook processing failed" });
-  }
-});
+//   } catch (error) {
+//     console.error("Webhook processing error:", error);
+//     res.status(500).json({ error: "Webhook processing failed" });
+//   }
+// });
 
 // Regular middleware (after webhook endpoint)
 app.use(express.json());
